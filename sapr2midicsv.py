@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-audsize = 9
+audsize = None
 fastplay = 262
 ppq = 8
 #ppq = 220
@@ -27,6 +27,7 @@ if(m.group(3) != None):
 elif(m.group(4) != None):
 	header = data[:m.start()]
 	data = data[m.end(1):]
+
 m = re.search(b'\\bAUDSIZE\s+(\d+)\\b', header)
 if(m):
 	audsize = int(m.group(1).decode())
@@ -34,9 +35,15 @@ m = re.search(b'\\bFASTPLAY\s+(\d+)\\b', header)
 if(m):
 	fastplay = int(m.group(1).decode())
 
+m = re.search(b'\\bSTEREO\\b', header)
+stereo = True if(m) else False
+
+if(audsize == None):
+	audsize = 18 if(stereo) else 9
+
 if(data[0] == 0xff and data[1] == 0xff):
 	data = data[2:]
-	if(data[0] == 0x0 and data[1] == 0x0):
+	if(data[0] == 0x0 and data[1] == 0x0 and (data[1] != 0 or data[2] != 0)):
 		data = data[4:]
 
 def audf_to_midi_note_bend(audf):
@@ -55,9 +62,9 @@ print("0, 0, Header, 1, 1, " + str(ppq))
 print("1, 0, Start_track")
 print("1, 0, Tempo, " + str(int(60000000*ppq/((3579545.0/114/2/fastplay)*60))))
 
-last_audf = [ -1, -1, -1, -1]
-last_audc = [ -1, -1, -1, -1]
-last_note = [ 0, 0, 0, 0]
+last_audf = [ -1, -1, -1, -1, -1, -1, -1, -1]
+last_audc = [ -1, -1, -1, -1, -1, -1, -1, -1]
+last_note = [ 0, 0, 0, 0, 0, 0, 0, 0]
 
 pure1 = 80
 dist17 = 116 # 117 116 113 47
@@ -75,13 +82,14 @@ while(len(data)):
 	line = data[0:audsize]
 	data = data[audsize:]
 
-	for v in range(0,4):
-		audf = line[v<<1]
-		vol = (line[(v<<1)+1] & 0xf) <<3
+	for v in range(0,8 if stereo else 4):
+		p = v // 4
+		audf = line[p + (v<<1)]
 		note, bend = audf_to_midi_note_bend(audf)
-		audc = line[(v<<1)+1]
+		audc = line[(p + (v<<1))+1]
 		dist = audc >>5
-		#if(audf == 0): vol = 0
+		vol = (audc & 0xf) <<3
+		if(audf == 0): vol = 0
 
 		if(last_audf[v] == audf and last_audc[v] == audc):
 			continue
