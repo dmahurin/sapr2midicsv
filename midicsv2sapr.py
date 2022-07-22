@@ -10,10 +10,11 @@ fastplay = None
 output_t = 0
 prev_t = 0
 
-notes = [ None, None, None, None ]
-dist = [ 5, 5, 5, 5]
-vol = [ 0, 0, 0, 0]
-bends = [8192, 8192, 8192, 8192]
+MAX_VOICES = 16
+notes = [ None ] * MAX_VOICES
+dist = [ None ] * MAX_VOICES
+vol = [ 0 ] * MAX_VOICES
+bends = [8192 ] * MAX_VOICES
 
 def to_audf(note, bend):
 	if(note == None): return 0
@@ -47,9 +48,11 @@ def tempo_to_fastplay(tempo):
 
 def output(t):
 	for i in range(t):
-		for v in range(4):
+		for v in range(MAX_VOICES):
+			if None is notes[v]: break
 			audf = to_audf(notes[v], bends[v])
 			audc = to_audc(dist[v], vol[v])
+			# write audctl every forth voice
 			sys.stdout.buffer.write(bytes([audf,audc]))
 		sys.stdout.buffer.write(bytes([0]))
 
@@ -63,6 +66,7 @@ for line in sys.stdin:
 			sys.exit(1)
 		if(prev_t == 0):
 			sys.stdout.buffer.write(b"SAP\r\n")
+			if notes[4] is not None:  sys.stdout.buffer.write(b"STEREO\r\n")
 			sys.stdout.buffer.write(b"TYPE R\r\n")
 			sys.stdout.buffer.write(b"FASTPLAY " + bytes(str(fastplay), 'UTF-8')+b"\r\n")
 			sys.stdout.buffer.write(bytes([0xff,0xff]))
