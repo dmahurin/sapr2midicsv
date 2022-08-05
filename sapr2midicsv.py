@@ -62,6 +62,12 @@ print("0, 0, Header, 1, 1, " + str(ppq))
 print("1, 0, Start_track")
 print("1, 0, Tempo, " + str(int(60000000*ppq/((3579545.0/114/2/fastplay)*60))))
 
+if(stereo):
+	for v in range(4):
+		print(f"1, 0, Control_c, {v}, 10, 0")
+	for v in range(4, 8):
+		print(f"1, 0, Control_c, {v}, 10, 127")
+
 last_audf = [ -1, -1, -1, -1, -1, -1, -1, -1]
 last_audc = [ -1, -1, -1, -1, -1, -1, -1, -1]
 last_note = [ 0, 0, 0, 0, 0, 0, 0, 0]
