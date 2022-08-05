@@ -16,14 +16,14 @@ dist = [ None ] * MAX_VOICES
 vol = [ 0 ] * MAX_VOICES
 bends = [8192 ] * MAX_VOICES
 
-def to_audf(note, bend):
+def to_audf(note, bend, use_15k):
 	if(note == None): return 0
 	if(note == 127 and bend == 16383): return 0
 	if(note == 127 and bend == 16382): return 1
 
 	f = 440.0*pow(2,(note-69+((bend-8192)/4096))/12)
 	
-	return int(3579545.0 / 28 / f / 4 - 0.5)
+	return int(3579545.0 / (114 if use_15k else 28) / f / 4 - 0.5)
 
 def to_dist(inst):
 	if(inst == 0 or inst == 80):
@@ -48,13 +48,22 @@ def tempo_to_fastplay(tempo):
 
 def output(t):
 	for i in range(t):
+		use_15k = [ False ] * (MAX_VOICES // 4)
 		for v in range(MAX_VOICES):
 			if None is notes[v]: break
-			audf = to_audf(notes[v], bends[v])
+			if (notes[v] < 47 or (notes[v] == 47 and to_audf(notes[v], bends[v], False) != 255)): use_15k[v>>2] = True
+		for v in range(MAX_VOICES):
+			# if no data for voice, fill in with zeros or break at pokey boundary (every 4)
+			if None is notes[v] or None is dist[v]:
+				if 0 == (v & 3): break
+				dist[v] = 0
+
+			audf = to_audf(notes[v], bends[v], use_15k[v>>2])
 			audc = to_audc(dist[v], vol[v])
 			# write audctl every forth voice
 			sys.stdout.buffer.write(bytes([audf,audc]))
-		sys.stdout.buffer.write(bytes([0]))
+			if 3 == (v & 3):
+				sys.stdout.buffer.write(bytes([1 if use_15k[v>>2] else 0]))
 
 for line in sys.stdin:
 	line = line.rstrip('\n').replace(', ', ',').split(',')
