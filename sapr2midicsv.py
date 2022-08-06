@@ -46,11 +46,13 @@ if(data[0] == 0xff and data[1] == 0xff):
 	if(data[0] == 0x0 and data[1] == 0x0 and (data[1] != 0 or data[2] != 0)):
 		data = data[4:]
 
+burstclock = 3579545 if 0 == 262 % fastplay else 3546894
+
 def audf_to_midi_note_bend(audf, use15k = False):
 	if(audf == 0): return 127, 16383
 	if(audf == 1): return 127, 16382
 
-	f = 3579545.0/114/(audf + 1)/4 if use15k else 3579545.0/28/(audf + 1)/4
+	f = burstclock/(114 if use15k else 28)/(audf + 1)/4
 	note = int((12.0*math.log(f/440)/math.log(2.0)) + 69.5)
 	if(note > 127): note = 127
 	note_f = 440.0 * math.pow(2.0, (note-69)/12)
@@ -60,7 +62,7 @@ def audf_to_midi_note_bend(audf, use15k = False):
 
 print("0, 0, Header, 1, 1, " + str(ppq))
 print("1, 0, Start_track")
-print("1, 0, Tempo, " + str(int(60000000*ppq/((3579545.0/114/2/fastplay)*60))))
+print("1, 0, Tempo, " + str(int(60000000*ppq/((burstclock/114/2/fastplay)*60))))
 
 if(stereo):
 	for v in range(4):

@@ -21,9 +21,11 @@ def to_audf(note, bend, use_15k):
 	if(note == 127 and bend == 16383): return 0
 	if(note == 127 and bend == 16382): return 1
 
+	burstclock = 3579545 if 0 == 262 % fastplay else 3546894
+
 	f = 440.0*pow(2,(note-69+((bend-8192)/4096))/12)
 	
-	return int(3579545.0 / (114 if use_15k else 28) / f / 4 - 0.5)
+	return int(burstclock / (114 if use_15k else 28) / f / 4 - 0.5)
 
 def to_dist(inst):
 	if(inst == 0 or inst == 80):
@@ -44,6 +46,8 @@ def to_audc(dist, vol):
 	return (dist << 5) | (vol & 0xf)
 
 def tempo_to_fastplay(tempo):
+	if 312 == int(float(tempo)/ppq*60/60000000/114/2*3546894+0.5):
+		return 312
 	return int(float(tempo)/ppq*60/60000000/114/2*3579545.0+0.5)
 
 def output(t):
