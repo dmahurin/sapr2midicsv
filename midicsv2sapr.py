@@ -82,7 +82,7 @@ for line in sys.stdin:
 			if notes[4] is not None:  sys.stdout.buffer.write(b"STEREO\r\n")
 			sys.stdout.buffer.write(b"TYPE R\r\n")
 			sys.stdout.buffer.write(b"FASTPLAY " + bytes(str(fastplay), 'UTF-8')+b"\r\n")
-			sys.stdout.buffer.write(bytes([0xff,0xff]))
+			sys.stdout.buffer.write(b"\r\n")
 		output(t - prev_t)
 		prev_t = t
 	command = line[2]
